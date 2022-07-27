@@ -39,9 +39,15 @@ def play_game(testing=False):
             shelf_score = 0
             dice_remaining = 6
             round_num += 1
+            print(f"You banked {shelf_score} points in round {round_num}\nTotal score is {banked_score} points")
             continue
         shelf_score += roll_score
         dice_remaining -= len(shelfed_dice)
+        if dice_remaining == 0:
+            print("Hot Dice!!")
+            dice_remaining = 6
+            print(f"You have {shelf_score} unbanked points and {dice_remaining} dice remaining")
+            continue
         print(f"You have {shelf_score} unbanked points and {dice_remaining} dice remaining")
         while True:
             print("(r)oll again, (b)ank your points or (q)uit:")
@@ -51,17 +57,15 @@ def play_game(testing=False):
                 return
             elif user_input == "b":
                 banked_score += shelf_score
+                round_num += 1
+                print(f"You banked {shelf_score} points in round {round_num}\nTotal score is {banked_score} points")
                 shelf_score = 0
                 dice_remaining = 6
-                round_num += 1
-                print(f"You banked 50 points in round {round_num}\nTotal score is {banked_score} points")
                 break
             elif user_input == "r":
                 break
             else:
                 print('please type "r" to roll again, "b" to bank your points, or "q" to quit:')
-
-            break
     else:
         print(f"Congratulations!! You have won with {banked_score} points in {round_num} rounds!")
 
@@ -77,9 +81,7 @@ def shelf_dice(rolled_dice):
         if search(r"[^1-6]", user_input) or len(user_input) > len(rolled_dice):
             print('Please enter "q" or numbers between 1-6 only (no spaces)')
             continue
-        shelfed_dice = []
-        for char in user_input:
-            shelfed_dice.append(int(char))
+        shelfed_dice = [int(char) for char in user_input]
         if is_valid_selection(shelfed_dice, rolled_dice):
             return shelfed_dice
         else:
@@ -98,4 +100,4 @@ def is_valid_selection(shelfed_dice, rolled_dice):
 
 if __name__ == "__main__":
     if start_game():
-        play_game(True)
+        play_game()
