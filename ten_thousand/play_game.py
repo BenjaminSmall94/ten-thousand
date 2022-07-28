@@ -11,93 +11,154 @@ def start_game():
         if play_or_not == "y":
             return True
         elif play_or_not == "n":
-            print("OK. Maybe another time")
             return False
         else:
             print('Please type "y" or "n"')
 
 
-def play_game(testing=False):
+def play_game(predetermined_dice=None):
     banked_score = 0
-    shelf_score = 0
     round_num = 0
-    dice_remaining = 6
-    while banked_score < 10000:
-        if shelf_score == 0:
-            print(f"Starting round {round_num + 1}\nRolling {dice_remaining} dice...")
-        else:
-            print(f"Continuing round {round_num + 1}\nRolling {dice_remaining} dice...")
-        rolled_dice = GameLogic.roll_dice(dice_remaining, testing)
-        print("*** " + ' '.join([str(num) for num in rolled_dice]) + " ***")
-        shelfed_dice = shelf_dice(rolled_dice)
-        if shelfed_dice is None:
+    max_rounds = 20
+    rolled_nums = 0
+    while banked_score < 10000 and round_num < max_rounds:
+        result = play_round(round_num, predetermined_dice, rolled_nums)
+        if result is False:
             print(f"Thanks for playing. You earned {banked_score} points")
             return
-        roll_score = GameLogic.calculate_score(shelfed_dice)
-        if roll_score == 0:
-            print("ZILCHED!!")
-            shelf_score = 0
-            dice_remaining = 6
-            round_num += 1
+        else:
+            round_num, shelf_score = result[0:2]
+            rolled_nums += result[2]
+            banked_score += shelf_score
             print(f"You banked {shelf_score} points in round {round_num}\nTotal score is {banked_score} points")
-            continue
-        shelf_score += roll_score
-        dice_remaining -= len(shelfed_dice)
-        if dice_remaining == 0:
-            print("Hot Dice!!")
-            dice_remaining = 6
-            print(f"You have {shelf_score} unbanked points and {dice_remaining} dice remaining")
-            continue
-        print(f"You have {shelf_score} unbanked points and {dice_remaining} dice remaining")
-        while True:
-            print("(r)oll again, (b)ank your points or (q)uit:")
-            user_input = input("> ").lower()
-            if user_input == "q":
-                print(f"Thanks for playing. You earned {banked_score} points")
-                return
-            elif user_input == "b":
-                banked_score += shelf_score
-                round_num += 1
-                print(f"You banked {shelf_score} points in round {round_num}\nTotal score is {banked_score} points")
-                shelf_score = 0
-                dice_remaining = 6
-                break
-            elif user_input == "r":
-                break
-            else:
-                print('please type "r" to roll again, "b" to bank your points, or "q" to quit:')
     else:
-        print(f"Congratulations!! You have won with {banked_score} points in {round_num} rounds!")
+        if banked_score >= 10000:
+            print(f"Congratulations!! You have won with {banked_score} points in {round_num} rounds!")
+        else:
+            print(f"You failed to reach 10,000 in {max_rounds}. You scored {banked_score}. Better luck next time!")
 
 
-def shelf_dice(rolled_dice):
+def play_round(round_num, predetermined_dice, rolled_nums):
+    dice_remaining = 6
+    shelf_score = 0
+    roll_num = rolled_nums
+    while True:
+        rolling_message(shelf_score, round_num, dice_remaining)
+        rolled_dice, roll_num = roll_dice(dice_remaining, roll_num, predetermined_dice)
+        selection_result = select_score_compare(rolled_dice)
+        if selection_result is False:
+            return False
+        selected_score, roll_score, scoring_dice = selection_result
+        if roll_score == 0:
+            print_zilch()
+            return round_num + 1, 0, roll_num
+        shelf_score += roll_score
+        dice_remaining -= len(scoring_dice)
+        if dice_remaining == 0:
+            dice_remaining = 6
+            # print(f"You have {shelf_score} unbanked points and {dice_remaining} dice remaining")
+            # continue
+        print(f"You have {shelf_score} unbanked points and {dice_remaining} dice remaining")
+        user_choice = bank_roll_or_quit()
+        if user_choice is False:
+            return False
+        elif user_choice is True:
+            return round_num + 1, shelf_score, roll_num
+
+
+def select_score_compare(rolled_dice):
+    possible_scorers = GameLogic.get_scorers(rolled_dice)
+    if len(possible_scorers) > 0:
+        selection_result = select_and_score(rolled_dice)
+        if selection_result is False:
+            return False
+        selected_dice, roll_score, scoring_dice = selection_result
+        while len(selected_dice) != len(scoring_dice):
+            differences = find_difference(selected_dice, scoring_dice)
+            print("Cannot shelf the following dice as they are non scoring")
+            print("*** " + ' '.join([str(num) for num in differences]) + " ***")
+            print("Please choose again")
+            selection_result = select_and_score(rolled_dice)
+            if selection_result is False:
+                return False
+            selected_dice, roll_score, scoring_dice = selection_result
+        return selected_dice, roll_score, scoring_dice
+    else:
+        return [], 0, []
+
+
+def select_and_score(rolled_dice):
+    selected_dice = select_dice(rolled_dice)
+    if selected_dice is False:
+        return False
+    scoring_dice = GameLogic.get_scorers(selected_dice)
+    roll_score = GameLogic.calculate_score(selected_dice)
+    return selected_dice, roll_score, scoring_dice
+
+
+def rolling_message(shelf_score, round_num, dice_remaining):
+    if shelf_score == 0:
+        print(f"Starting round {round_num + 1}")
+    print(f"Rolling {dice_remaining} dice...")
+
+
+def roll_dice(dice_remaining, roll_num, predetermined_dice):
+    rolled_dice = GameLogic.roll_dice(dice_remaining, roll_num, predetermined_dice)
+    print("*** " + ' '.join([str(num) for num in rolled_dice]) + " ***")
+    return rolled_dice, roll_num + 1
+
+
+def print_zilch():
+    print("****************************************")
+    print("**        Zilch!!! Round over         **")
+    print("****************************************")
+
+
+def select_dice(rolled_dice):
     while True:
         print("Enter dice to keep, or (q)uit:")
         user_input = input("> ").lower()
+        user_input = user_input.replace(" ", "")
         if user_input == "q":
-            return None
+            return False
         if user_input == "":
             return []
         if search(r"[^1-6]", user_input) or len(user_input) > len(rolled_dice):
-            print('Please enter "q" or numbers between 1-6 only (no spaces)')
+            print('You may enter "q" or numbers between 1-6 of the same amount or less than the number of rolled dice')
             continue
-        shelfed_dice = [int(char) for char in user_input]
-        if is_valid_selection(shelfed_dice, rolled_dice):
-            return shelfed_dice
+        selected_dice = [int(char) for char in user_input]
+        if GameLogic.validate_keepers(rolled_dice, selected_dice):
+            return selected_dice
         else:
-            print("You may not enter more of a number than dice you rolled of that number")
+            print("Cheater!!! Or possibly made a typo...")
+            print("*** " + ' '.join([str(num) for num in rolled_dice]) + " ***")
             continue
 
 
-def is_valid_selection(shelfed_dice, rolled_dice):
-    for num in shelfed_dice:
-        if num not in rolled_dice:
+def find_difference(selected_dice, scoring_dice):
+    for num in range(1, 7):
+        while num in selected_dice and num in scoring_dice:
+            selected_dice.remove(num)
+            scoring_dice.remove(num)
+    return selected_dice
+
+
+def bank_roll_or_quit():
+    while True:
+        print("(r)oll again, (b)ank your points or (q)uit:")
+        user_input = input("> ").lower()
+        if user_input == "q":
             return False
-        elif shelfed_dice.count(num) > rolled_dice.count(num):
-            return False
-    return True
+        elif user_input == "b":
+            return True
+        elif user_input == "r":
+            return
+        else:
+            print('please type "r" to roll again, "b" to bank your points, or "q" to quit:')
 
 
 if __name__ == "__main__":
     if start_game():
-        play_game()
+        play_game(((1, 2, 5, 1, 2, 1), (4, 4), (1, 1, 2, 5, 1, 6)))
+    else:
+        print("OK. Maybe another time")
