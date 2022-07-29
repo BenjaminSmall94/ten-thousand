@@ -20,15 +20,13 @@ def play_game(predetermined_dice=None):
     banked_score = 0
     round_num = 0
     max_rounds = 20
-    rolled_nums = 0
     while banked_score < 10000 and round_num < max_rounds:
-        result = play_round(round_num, predetermined_dice, rolled_nums)
+        result = play_round(round_num, predetermined_dice)
         if result is False:
             print(f"Thanks for playing. You earned {banked_score} points")
             return
         else:
             round_num, shelf_score = result[0:2]
-            rolled_nums += result[2]
             banked_score += shelf_score
             print(f"You banked {shelf_score} points in round {round_num}\nTotal score is {banked_score} points")
     else:
@@ -38,20 +36,19 @@ def play_game(predetermined_dice=None):
             print(f"You failed to reach 10,000 in {max_rounds}. You scored {banked_score}. Better luck next time!")
 
 
-def play_round(round_num, predetermined_dice, rolled_nums):
+def play_round(round_num, predetermined_dice):
     dice_remaining = 6
     shelf_score = 0
-    roll_num = rolled_nums
     while True:
         rolling_message(shelf_score, round_num, dice_remaining)
-        rolled_dice, roll_num = roll_dice(dice_remaining, roll_num, predetermined_dice)
+        rolled_dice = roll_dice(dice_remaining, predetermined_dice)
         selection_result = select_score_compare(rolled_dice)
         if selection_result is False:
             return False
         selected_score, roll_score, scoring_dice = selection_result
         if roll_score == 0:
             print_zilch()
-            return round_num + 1, 0, roll_num
+            return round_num + 1, 0
         shelf_score += roll_score
         dice_remaining -= len(scoring_dice)
         if dice_remaining == 0:
@@ -63,7 +60,7 @@ def play_round(round_num, predetermined_dice, rolled_nums):
         if user_choice is False:
             return False
         elif user_choice is True:
-            return round_num + 1, shelf_score, roll_num
+            return round_num + 1, shelf_score
 
 
 def select_score_compare(rolled_dice):
@@ -92,7 +89,7 @@ def select_and_score(rolled_dice):
     if selected_dice is False:
         return False
     scoring_dice = GameLogic.get_scorers(selected_dice)
-    roll_score = GameLogic.calculate_score(selected_dice)
+    roll_score = GameLogic.calculate_score(scoring_dice)
     return selected_dice, roll_score, scoring_dice
 
 
@@ -102,10 +99,10 @@ def rolling_message(shelf_score, round_num, dice_remaining):
     print(f"Rolling {dice_remaining} dice...")
 
 
-def roll_dice(dice_remaining, roll_num, predetermined_dice):
-    rolled_dice = GameLogic.roll_dice(dice_remaining, roll_num, predetermined_dice)
+def roll_dice(dice_remaining, predetermined_dice):
+    rolled_dice = GameLogic.roll_dice(dice_remaining, predetermined_dice)
     print("*** " + ' '.join([str(num) for num in rolled_dice]) + " ***")
-    return rolled_dice, roll_num + 1
+    return rolled_dice
 
 
 def print_zilch():
@@ -159,6 +156,6 @@ def bank_roll_or_quit():
 
 if __name__ == "__main__":
     if start_game():
-        play_game(((1, 2, 5, 1, 2, 1), (4, 4), (1, 1, 2, 5, 1, 6)))
+        play_game([(2, 3, 1, 3, 1, 2), (4, 1, 4, 4, 3, 4), (3, 2, 3, 2, 1, 4)])
     else:
         print("OK. Maybe another time")
