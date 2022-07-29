@@ -9,6 +9,7 @@ Enter dice to keep, or (q)uit:
 You have 1500 unbanked points and 6 dice remaining
 (r)oll again, (b)ank your points or (q)uit:
 > r
+Rolling 6 dice...
 *** 4 1 4 4 3 4 ***
 Enter dice to keep, or (q)uit:
 > 44441

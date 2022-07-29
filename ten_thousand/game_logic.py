@@ -4,31 +4,33 @@ from random import randint
 class GameLogic:
 
     @staticmethod
-    def roll_dice(num_dice, round_num=None, predetermined_dice=None):
-        if predetermined_dice is None or round_num >= len(predetermined_dice):
+    def roll_dice(num_dice, predetermined_dice=None):
+        if not predetermined_dice:
             rolled_dice = []
             for i in range(num_dice):
                 rolled_dice.append(randint(1, 6))
             return tuple(rolled_dice)
         else:
-            return predetermined_dice[round_num]
+            return predetermined_dice.pop(0)
 
 
     @staticmethod
-    def get_scorers(selected_dice):
+    def get_scorers(dice):
         num_on_dice = 1
         scoring_dice = []
         while num_on_dice <= 6:
+            num_count = dice.count(num_on_dice)
             if num_on_dice == 1 or num_on_dice == 5:
-                num_count = selected_dice.count(num_on_dice)
+                scoring_dice = GameLogic.add_to_scoring_dice(scoring_dice, num_on_dice, num_count)
+            elif num_count > 2:
                 scoring_dice = GameLogic.add_to_scoring_dice(scoring_dice, num_on_dice, num_count)
             num_on_dice += 1
-        unique_numbers = len(set(scoring_dice))
+        unique_numbers = len(set(dice))
         if unique_numbers == 6:
-            return 1500, (1, 2, 3, 4, 5, 6)
+            return 1, 2, 3, 4, 5, 6
         if unique_numbers == 3:
-            if GameLogic.double_trips(scoring_dice):
-                return 1500, tuple(selected_dice)
+            if GameLogic.double_trips(dice):
+                return tuple(dice)
         return scoring_dice
 
     @staticmethod
@@ -51,10 +53,10 @@ class GameLogic:
             num_on_dice += 1
         unique_numbers = len(set(scoring_dice))
         if unique_numbers == 6:
-            return 1500, (1, 2, 3, 4, 5, 6)
+            return 1500
         if unique_numbers == 3:
             if GameLogic.double_trips(scoring_dice):
-                return 1500, tuple(scoring_dice)
+                return 1500
         return roll_score
 
     @staticmethod
